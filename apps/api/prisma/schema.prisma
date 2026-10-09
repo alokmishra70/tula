@@ -1,0 +1,310 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Sex {
+  male
+  female
+}
+
+enum ActivityLevel {
+  sedentary
+  light
+  moderate
+  very_active
+}
+
+enum GoalType {
+  lose_weight
+  maintain
+  build_muscle
+  improve_marker
+}
+
+enum MealType {
+  breakfast
+  lunch
+  snack
+  dinner
+}
+
+enum MealSource {
+  photo
+  voice
+  text
+  chat
+  repeat
+}
+
+enum MealStatus {
+  pending
+  parsed
+  confirmed
+}
+
+enum ReportStatus {
+  processing
+  ready
+  failed
+}
+
+enum MarkerStatus {
+  low
+  in_range
+  high
+  critical
+  unclassified
+}
+
+enum NudgeRule {
+  first_meal
+  missing_meal
+  protein_gap
+  fiber_gap
+  calorie_room
+  streak_protection
+  day_complete
+}
+
+enum ChatRole {
+  user
+  assistant
+}
+
+model User {
+  id            String        @id @default(uuid()) @db.Uuid
+  deviceId      String        @unique @map("device_id")
+  name          String
+  sex           Sex
+  birthYear     Int           @map("birth_year")
+  heightCm      Float         @map("height_cm")
+  activityLevel ActivityLevel @map("activity_level")
+  timezone      String
+  isDemo        Boolean       @default(false) @map("is_demo")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  goals          Goal[]
+  weightLogs     WeightLog[]
+  meals          Meal[]
+  reports        Report[]
+  biomarkers     Biomarker[]
+  dailySummaries DailySummary[]
+  nudges         Nudge[]
+  chatMessages   ChatMessage[]
+
+  @@map("users")
+}
+
+model Goal {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  type             GoalType
+  startWeightKg    Float     @map("start_weight_kg")
+  targetWeightKg   Float?    @map("target_weight_kg")
+  kcalTarget       Int       @map("kcal_target")
+  proteinG         Int       @map("protein_g")
+  carbsG           Int       @map("carbs_g")
+  fatG             Int       @map("fat_g")
+  fiberG           Int       @map("fiber_g")
+  waterMl          Int       @map("water_ml")
+  saturatedFatMaxG Int?      @map("saturated_fat_max_g")
+  addedSugarMaxG   Int?      @map("added_sugar_max_g")
+  weeklyChangeKg   Float     @map("weekly_change_kg")
+  projectedDate    DateTime? @map("projected_date") @db.Date
+  adjustments      String[]
+  foodSuggestions  String[]  @map("food_suggestions")
+  reasoning        String
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+  @@map("goals")
+}
+
+model WeightLog {
+  id       String   @id @default(uuid()) @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  weightKg Float    @map("weight_kg")
+  loggedAt DateTime @default(now()) @map("logged_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedAt])
+  @@map("weight_logs")
+}
+
+model Meal {
+  id             String     @id @default(uuid()) @db.Uuid
+  userId         String     @map("user_id") @db.Uuid
+  mealType       MealType   @map("meal_type")
+  eatenAt        DateTime   @map("eaten_at") @db.Timestamptz
+  localDate      DateTime   @map("local_date") @db.Date
+  source         MealSource
+  mediaKey       String?    @map("media_key")
+  rawText        String?    @map("raw_text")
+  status         MealStatus
+  idempotencyKey String     @map("idempotency_key")
+  requestHash    String     @map("request_hash")
+  totals         Json
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MealItem[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, eatenAt])
+  @@index([userId, localDate])
+  @@index([status])
+  @@map("meals")
+}
+
+model MealItem {
+  id         String  @id @default(uuid()) @db.Uuid
+  mealId     String  @map("meal_id") @db.Uuid
+  position   Int
+  name       String
+  dishRefId  String? @map("dish_ref_id") @db.Uuid
+  quantity   Float
+  unit       String
+  kcal       Float
+  proteinG   Float   @map("protein_g")
+  carbsG     Float   @map("carbs_g")
+  fatG       Float   @map("fat_g")
+  fiberG     Float   @map("fiber_g")
+  confidence Float
+  edited     Boolean @default(false)
+
+  meal    Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  dishRef DishRef? @relation(fields: [dishRefId], references: [id], onDelete: SetNull)
+
+  @@index([mealId])
+  @@map("meal_items")
+}
+
+model DishRef {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  aliases     String[]
+  unit        String
+  kcalPerUnit Float    @map("kcal_per_unit")
+  proteinG    Float    @map("protein_g")
+  carbsG      Float    @map("carbs_g")
+  fatG        Float    @map("fat_g")
+  fiberG      Float    @map("fiber_g")
+
+  mealItems MealItem[]
+
+  @@map("dish_refs")
+}
+
+model Report {
+  id         String       @id @default(uuid()) @db.Uuid
+  userId     String       @map("user_id") @db.Uuid
+  fileKey    String       @map("file_key")
+  fileHash   String       @map("file_hash")
+  fileName   String       @map("file_name")
+  labName    String?      @map("lab_name")
+  reportDate DateTime?    @map("report_date") @db.Date
+  status     ReportStatus
+  errorCode  String?      @map("error_code")
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  biomarkers Biomarker[]
+
+  @@unique([userId, fileHash])
+  @@index([userId, createdAt])
+  @@map("reports")
+}
+
+model Biomarker {
+  id                String       @id @default(uuid()) @db.Uuid
+  reportId          String       @map("report_id") @db.Uuid
+  userId            String       @map("user_id") @db.Uuid
+  code              String?
+  rawName           String       @map("raw_name")
+  value             Float
+  unit              String
+  normalizedValue   Float?       @map("normalized_value")
+  canonicalUnit     String?      @map("canonical_unit")
+  refLow            Float?       @map("ref_low")
+  refHigh           Float?       @map("ref_high")
+  status            MarkerStatus
+  needsConfirmation Boolean      @default(false) @map("needs_confirmation")
+  explanation       Json?
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, code])
+  @@index([reportId])
+  @@map("biomarkers")
+}
+
+model DailySummary {
+  userId     String   @map("user_id") @db.Uuid
+  date       DateTime @db.Date
+  kcal       Float    @default(0)
+  proteinG   Float    @default(0) @map("protein_g")
+  carbsG     Float    @default(0) @map("carbs_g")
+  fatG       Float    @default(0) @map("fat_g")
+  fiberG     Float    @default(0) @map("fiber_g")
+  mealsCount Int      @default(0) @map("meals_count")
+  onTarget   Boolean  @default(false) @map("on_target")
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, date])
+  @@map("daily_summaries")
+}
+
+model Nudge {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  rule        NudgeRule
+  message     String
+  action      String
+  mealType    MealType? @map("meal_type")
+  shownAt     DateTime  @default(now()) @map("shown_at") @db.Timestamptz
+  actedAt     DateTime? @map("acted_at") @db.Timestamptz
+  dismissedAt DateTime? @map("dismissed_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, shownAt])
+  @@map("nudges")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      ChatRole
+  content   String
+  toolCalls Json?    @map("tool_calls")
+  cards     Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("chat_messages")
+}
+
+model AiCache {
+  key       String   @id
+  response  Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("ai_cache")
+}

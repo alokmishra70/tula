@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.expo
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.turbo
+storage-local
+apps/api/src/generated
+storage-test
+!.env.test.example

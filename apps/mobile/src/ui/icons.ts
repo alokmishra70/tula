@@ -1,0 +1,28 @@
+// Per-icon imports keep the rest of the icon set out of the bundle; add new icons here.
+export { default as ArrowLeft } from 'lucide-react-native/icons/arrow-left';
+export { default as Bell } from 'lucide-react-native/icons/bell';
+export { default as Camera } from 'lucide-react-native/icons/camera';
+export { default as Check } from 'lucide-react-native/icons/check';
+export { default as ChevronDown } from 'lucide-react-native/icons/chevron-down';
+export { default as ChevronRight } from 'lucide-react-native/icons/chevron-right';
+export { default as Clock } from 'lucide-react-native/icons/clock';
+export { default as FileUp } from 'lucide-react-native/icons/file-up';
+export { default as Flame } from 'lucide-react-native/icons/flame';
+export { default as FlaskConical } from 'lucide-react-native/icons/flask-conical';
+export { default as Image } from 'lucide-react-native/icons/image';
+export { default as Keyboard } from 'lucide-react-native/icons/keyboard';
+export { default as MessageCircle } from 'lucide-react-native/icons/message-circle';
+export { default as Mic } from 'lucide-react-native/icons/mic';
+export { default as Minus } from 'lucide-react-native/icons/minus';
+export { default as Pencil } from 'lucide-react-native/icons/pencil';
+export { default as Plus } from 'lucide-react-native/icons/plus';
+export { default as RotateCw } from 'lucide-react-native/icons/rotate-cw';
+export { default as Send } from 'lucide-react-native/icons/send';
+export { default as Square } from 'lucide-react-native/icons/square';
+export { default as Sun } from 'lucide-react-native/icons/sun';
+export { default as Trash } from 'lucide-react-native/icons/trash';
+export { default as WifiOff } from 'lucide-react-native/icons/wifi-off';
+export { default as X } from 'lucide-react-native/icons/x';
+export { default as Zap } from 'lucide-react-native/icons/zap';
+export { default as ZapOff } from 'lucide-react-native/icons/zap-off';
+export type { LucideIcon } from 'lucide-react-native';
